@@ -1,4 +1,4 @@
-import { freeze, optionalText, requiredText } from "../shared/errors";
+import { ResultsError, freeze, optionalText, requiredText } from "../shared/errors";
 
 export const FEEDBACK_SOURCES = Object.freeze(["automatic", "teacher", "review"] as const);
 export type FeedbackSource = (typeof FEEDBACK_SOURCES)[number];
@@ -77,6 +77,36 @@ export function createAutomaticFeedback(input: {
     source: "automatic",
     summary: "No automatic feedback is available."
   });
+}
+
+export function createTeacherFeedback(input: {
+  questionKey: string;
+  summary: string;
+  nextStep?: string | null;
+}): FeedbackItem {
+  const nextStep = optionalText(input.nextStep);
+  return createFeedbackItem({
+    questionKey: input.questionKey,
+    source: "teacher",
+    summary: input.summary,
+    nextSteps: nextStep ? [nextStep] : [],
+    reviewNotes: null
+  });
+}
+
+export function validateTeacherFeedback(input: {
+  summary: string;
+  nextStep?: string | null;
+}): Readonly<{ summary: string; nextStep: string | null }> {
+  const summary = requiredText(input.summary, "FEEDBACK_SUMMARY_REQUIRED");
+  if (summary.length > 2000) {
+    throw new ResultsError("REVIEW_FEEDBACK_TOO_LONG", "REVIEW_FEEDBACK_TOO_LONG: feedback summary exceeds 2000 characters");
+  }
+  const nextStep = optionalText(input.nextStep);
+  if (nextStep && nextStep.length > 500) {
+    throw new ResultsError("REVIEW_NEXT_STEP_TOO_LONG", "REVIEW_NEXT_STEP_TOO_LONG: next step exceeds 500 characters");
+  }
+  return freeze({ summary, nextStep });
 }
 
 export function buildFeedback(items: FeedbackItem[]): FeedbackBundle {

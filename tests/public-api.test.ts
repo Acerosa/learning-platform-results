@@ -10,6 +10,7 @@ const STABLE_EXPORTS = [
   "FEEDBACK_SOURCES",
   "MARKING_SOURCES",
   "REVIEW_REASONS",
+  "REVIEW_STATES",
   "ResultsError",
   "buildDiagnostics",
   "buildFeedback",
@@ -37,13 +38,18 @@ const STABLE_EXPORTS = [
   "createResponseResult",
   "createSingleChoiceEvidence",
   "createStructuredEvidence",
+  "createTeacherFeedback",
   "createWrittenEvidence",
   "exportResults",
   "interpretAttempt",
   "mapStoredEvidenceType",
   "mapStoredMarkingSource",
   "reviewReason",
-  "summariseMarking"
+  "reviewState",
+  "summariseMarking",
+  "summariseReviewChange",
+  "validateReviewDecision",
+  "validateTeacherFeedback"
 ].sort();
 
 test("the package root exposes only the official API", () => {

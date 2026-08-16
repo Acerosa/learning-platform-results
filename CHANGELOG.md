@@ -2,6 +2,14 @@
 
 All notable changes are documented here. This project follows Semantic Versioning.
 
+## 0.1.1 - 2026-08-16
+
+### Added
+
+- Teacher review helpers: `reviewState`, `validateReviewDecision`, `summariseReviewChange`.
+- Teacher feedback factories: `createTeacherFeedback`, `validateTeacherFeedback`.
+- `REVIEW_STATES` for requires-review vs reviewed interpretation.
+
 ## 0.1.0 - 2026-08-16
 
 ### Added

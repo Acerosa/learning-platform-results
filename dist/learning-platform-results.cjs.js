@@ -29,6 +29,7 @@ __export(index_exports, {
   FEEDBACK_SOURCES: () => FEEDBACK_SOURCES,
   MARKING_SOURCES: () => MARKING_SOURCES,
   REVIEW_REASONS: () => REVIEW_REASONS,
+  REVIEW_STATES: () => REVIEW_STATES,
   ResultsError: () => ResultsError,
   buildDiagnostics: () => buildDiagnostics,
   buildFeedback: () => buildFeedback,
@@ -56,13 +57,18 @@ __export(index_exports, {
   createResponseResult: () => createResponseResult,
   createSingleChoiceEvidence: () => createSingleChoiceEvidence,
   createStructuredEvidence: () => createStructuredEvidence,
+  createTeacherFeedback: () => createTeacherFeedback,
   createWrittenEvidence: () => createWrittenEvidence,
   exportResults: () => exportResults,
   interpretAttempt: () => interpretAttempt,
   mapStoredEvidenceType: () => mapStoredEvidenceType,
   mapStoredMarkingSource: () => mapStoredMarkingSource,
   reviewReason: () => reviewReason,
-  summariseMarking: () => summariseMarking
+  reviewState: () => reviewState,
+  summariseMarking: () => summariseMarking,
+  summariseReviewChange: () => summariseReviewChange,
+  validateReviewDecision: () => validateReviewDecision,
+  validateTeacherFeedback: () => validateTeacherFeedback
 });
 module.exports = __toCommonJS(index_exports);
 
@@ -348,6 +354,35 @@ function summariseMarking(attempts) {
     reviewCount: attempts.filter((attempt) => attempt.requiresReview).length
   });
 }
+var REVIEW_STATES = Object.freeze(["requires_review", "reviewed"]);
+function reviewState(mark) {
+  return mark.requiresReview ? "requires_review" : "reviewed";
+}
+function validateReviewDecision(input) {
+  const maxScore = requiredNumber(input.maxScore, "MAX_SCORE_REQUIRED");
+  const awardedScore = requiredNumber(input.awardedScore, "AWARDED_SCORE_REQUIRED");
+  if (awardedScore < 0 || awardedScore > maxScore) {
+    throw new ResultsError("REVIEW_SCORE_INVALID", "REVIEW_SCORE_INVALID: awarded score must be within 0 and max score");
+  }
+  const allowUnknown = input.allowUnknownCorrectness !== false;
+  if (input.isCorrect == null && !allowUnknown) {
+    throw new ResultsError("REVIEW_CORRECTNESS_REQUIRED", "REVIEW_CORRECTNESS_REQUIRED: correctness is required");
+  }
+  return freeze({
+    awardedScore,
+    maxScore,
+    isCorrect: input.isCorrect ?? null
+  });
+}
+function summariseReviewChange(input) {
+  return freeze({
+    scoreChanged: input.before.score !== input.after.score,
+    correctnessChanged: input.before.isCorrect !== input.after.isCorrect,
+    reviewCleared: Boolean(input.before.requiresReview) && !input.after.requiresReview,
+    feedbackChanged: (input.before.feedbackSummary ?? null) !== (input.after.feedbackSummary ?? null),
+    markingSourceChanged: input.before.markingSource !== input.after.markingSource
+  });
+}
 function interpretAttempt(input) {
   const byKey = new Map(input.marks.map((mark) => [mark.questionKey, mark]));
   const responses = input.items.map((item2) => {
@@ -552,6 +587,27 @@ function createAutomaticFeedback(input) {
     source: "automatic",
     summary: "No automatic feedback is available."
   });
+}
+function createTeacherFeedback(input) {
+  const nextStep = optionalText(input.nextStep);
+  return createFeedbackItem({
+    questionKey: input.questionKey,
+    source: "teacher",
+    summary: input.summary,
+    nextSteps: nextStep ? [nextStep] : [],
+    reviewNotes: null
+  });
+}
+function validateTeacherFeedback(input) {
+  const summary = requiredText(input.summary, "FEEDBACK_SUMMARY_REQUIRED");
+  if (summary.length > 2e3) {
+    throw new ResultsError("REVIEW_FEEDBACK_TOO_LONG", "REVIEW_FEEDBACK_TOO_LONG: feedback summary exceeds 2000 characters");
+  }
+  const nextStep = optionalText(input.nextStep);
+  if (nextStep && nextStep.length > 500) {
+    throw new ResultsError("REVIEW_NEXT_STEP_TOO_LONG", "REVIEW_NEXT_STEP_TOO_LONG: next step exceeds 500 characters");
+  }
+  return freeze({ summary, nextStep });
 }
 function buildFeedback(items) {
   const automatic = items.filter((item2) => item2.source === "automatic");

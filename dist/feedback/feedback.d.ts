@@ -33,4 +33,16 @@ export declare function createAutomaticFeedback(input: {
     isCorrect: boolean | null;
     requiresReview: boolean;
 }): FeedbackItem;
+export declare function createTeacherFeedback(input: {
+    questionKey: string;
+    summary: string;
+    nextStep?: string | null;
+}): FeedbackItem;
+export declare function validateTeacherFeedback(input: {
+    summary: string;
+    nextStep?: string | null;
+}): Readonly<{
+    summary: string;
+    nextStep: string | null;
+}>;
 export declare function buildFeedback(items: FeedbackItem[]): FeedbackBundle;
