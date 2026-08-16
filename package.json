@@ -1,0 +1,58 @@
+{
+  "name": "@learning-platform/results",
+  "version": "0.1.0",
+  "description": "Shared educational business logic for Learning Platform attempts, results, progress, diagnostics, feedback, markbook and exports.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/learning-platform-results.esm.js",
+  "module": "./dist/learning-platform-results.esm.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/learning-platform-results.esm.js",
+      "require": "./dist/learning-platform-results.cjs.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "docs",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "node scripts/build.mjs && tsc -p tsconfig.build.json",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src tests scripts",
+    "check": "npm run typecheck && npm run lint && npm test && npm run build"
+  },
+  "keywords": [
+    "learning-platform",
+    "results",
+    "progress",
+    "markbook"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Acerosa/learning-platform-results.git"
+  },
+  "homepage": "https://github.com/Acerosa/learning-platform-results#readme",
+  "bugs": {
+    "url": "https://github.com/Acerosa/learning-platform-results/issues"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.1",
+    "@types/node": "^22.19.19",
+    "esbuild": "^0.25.9",
+    "eslint": "9.39.1",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.46.4"
+  }
+}
