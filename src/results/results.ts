@@ -1,4 +1,4 @@
-import { freeze, optionalNumber, optionalText, requiredNumber, requiredText, scorePercentage } from "../shared/errors";
+import { ResultsError, freeze, optionalNumber, optionalText, requiredNumber, requiredText, scorePercentage } from "../shared/errors";
 import type { EvidenceItem } from "../evidence/evidence";
 
 export const MARKING_SOURCES = Object.freeze([
@@ -145,6 +145,54 @@ export function summariseMarking(attempts: readonly { markingSource?: string | n
     automaticCount: attempts.filter((attempt) => mapStoredMarkingSource(attempt.markingSource) === "automatic").length,
     teacherCount: attempts.filter((attempt) => mapStoredMarkingSource(attempt.markingSource) === "teacher").length,
     reviewCount: attempts.filter((attempt) => attempt.requiresReview).length
+  });
+}
+
+export const REVIEW_STATES = Object.freeze(["requires_review", "reviewed"] as const);
+export type ReviewState = (typeof REVIEW_STATES)[number];
+
+export function reviewState(mark: Pick<ResponseMark, "requiresReview">): ReviewState {
+  return mark.requiresReview ? "requires_review" : "reviewed";
+}
+
+export function validateReviewDecision(input: {
+  awardedScore: number;
+  maxScore: number;
+  isCorrect?: boolean | null;
+  allowUnknownCorrectness?: boolean;
+}): Readonly<{ awardedScore: number; maxScore: number; isCorrect: boolean | null }> {
+  const maxScore = requiredNumber(input.maxScore, "MAX_SCORE_REQUIRED");
+  const awardedScore = requiredNumber(input.awardedScore, "AWARDED_SCORE_REQUIRED");
+  if (awardedScore < 0 || awardedScore > maxScore) {
+    throw new ResultsError("REVIEW_SCORE_INVALID", "REVIEW_SCORE_INVALID: awarded score must be within 0 and max score");
+  }
+  const allowUnknown = input.allowUnknownCorrectness !== false;
+  if (input.isCorrect == null && !allowUnknown) {
+    throw new ResultsError("REVIEW_CORRECTNESS_REQUIRED", "REVIEW_CORRECTNESS_REQUIRED: correctness is required");
+  }
+  return freeze({
+    awardedScore,
+    maxScore,
+    isCorrect: input.isCorrect ?? null
+  });
+}
+
+export function summariseReviewChange(input: {
+  before: Pick<ResponseMark, "score" | "isCorrect" | "requiresReview" | "markingSource" | "feedbackSummary">;
+  after: Pick<ResponseMark, "score" | "isCorrect" | "requiresReview" | "markingSource" | "feedbackSummary">;
+}): Readonly<{
+  scoreChanged: boolean;
+  correctnessChanged: boolean;
+  reviewCleared: boolean;
+  feedbackChanged: boolean;
+  markingSourceChanged: boolean;
+}> {
+  return freeze({
+    scoreChanged: input.before.score !== input.after.score,
+    correctnessChanged: input.before.isCorrect !== input.after.isCorrect,
+    reviewCleared: Boolean(input.before.requiresReview) && !input.after.requiresReview,
+    feedbackChanged: (input.before.feedbackSummary ?? null) !== (input.after.feedbackSummary ?? null),
+    markingSourceChanged: input.before.markingSource !== input.after.markingSource
   });
 }
 

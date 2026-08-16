@@ -1,6 +1,6 @@
 {
   "name": "@learning-platform/results",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Shared educational business logic for Learning Platform attempts, results, progress, diagnostics, feedback, markbook and exports.",
   "license": "MIT",
   "type": "module",

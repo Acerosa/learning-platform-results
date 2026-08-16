@@ -51,6 +51,29 @@ export declare function summariseMarking(attempts: readonly {
     teacherCount: number;
     reviewCount: number;
 }>;
+export declare const REVIEW_STATES: readonly ["requires_review", "reviewed"];
+export type ReviewState = (typeof REVIEW_STATES)[number];
+export declare function reviewState(mark: Pick<ResponseMark, "requiresReview">): ReviewState;
+export declare function validateReviewDecision(input: {
+    awardedScore: number;
+    maxScore: number;
+    isCorrect?: boolean | null;
+    allowUnknownCorrectness?: boolean;
+}): Readonly<{
+    awardedScore: number;
+    maxScore: number;
+    isCorrect: boolean | null;
+}>;
+export declare function summariseReviewChange(input: {
+    before: Pick<ResponseMark, "score" | "isCorrect" | "requiresReview" | "markingSource" | "feedbackSummary">;
+    after: Pick<ResponseMark, "score" | "isCorrect" | "requiresReview" | "markingSource" | "feedbackSummary">;
+}): Readonly<{
+    scoreChanged: boolean;
+    correctnessChanged: boolean;
+    reviewCleared: boolean;
+    feedbackChanged: boolean;
+    markingSourceChanged: boolean;
+}>;
 export declare function interpretAttempt(input: {
     activityKey: string;
     items: readonly EvidenceItem[];

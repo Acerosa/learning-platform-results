@@ -4,7 +4,7 @@
 
 It does not own persistent data, React UI, teacher workflows or the database.
 
-Version: **0.1.0**.
+Version: **0.1.1**.
 
 ## Ownership
 

@@ -9,7 +9,10 @@ import {
   interpretAttempt,
   mapStoredMarkingSource,
   reviewReason,
-  summariseMarking
+  reviewState,
+  summariseMarking,
+  summariseReviewChange,
+  validateReviewDecision
 } from "../src/index";
 
 test("response results interpret correctness without a database", () => {
@@ -60,4 +63,19 @@ test("stored marking sources and review reasons are interpreted", () => {
     { questionKey: "q2", score: null, maxScore: 4, isCorrect: null, requiresReview: true, markingSource: "automatic" }
   ]).length, 1);
   assert.equal(summariseMarking([{ markingSource: "server", requiresReview: true }]).reviewCount, 1);
+});
+
+test("review decisions validate score bounds and summarise changes", () => {
+  const decision = validateReviewDecision({ awardedScore: 2, maxScore: 4, isCorrect: false });
+  assert.equal(decision.awardedScore, 2);
+  assert.equal(reviewState({ requiresReview: true }), "requires_review");
+  assert.equal(reviewState({ requiresReview: false }), "reviewed");
+  const delta = summariseReviewChange({
+    before: { score: 0, isCorrect: null, requiresReview: true, markingSource: "none", feedbackSummary: null },
+    after: { score: 2, isCorrect: false, requiresReview: false, markingSource: "teacher", feedbackSummary: "Needs example" }
+  });
+  assert.equal(delta.scoreChanged, true);
+  assert.equal(delta.reviewCleared, true);
+  assert.equal(delta.feedbackChanged, true);
+  assert.throws(() => validateReviewDecision({ awardedScore: 5, maxScore: 4 }), /REVIEW_SCORE_INVALID/);
 });

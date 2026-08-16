@@ -26,9 +26,13 @@ export {
   reviewReason,
   buildReviewQueue,
   summariseMarking,
-  REVIEW_REASONS
+  REVIEW_REASONS,
+  REVIEW_STATES,
+  reviewState,
+  validateReviewDecision,
+  summariseReviewChange
 } from "./results/results";
-export type { AttemptResult, Correctness, MarkingSource, ResponseMark, ResponseResult, ReviewQueueItem, ReviewReason } from "./results/results";
+export type { AttemptResult, Correctness, MarkingSource, ResponseMark, ResponseResult, ReviewQueueItem, ReviewReason, ReviewState } from "./results/results";
 export {
   COMPLETION_STATUSES,
   calculateBestAttempt,
@@ -41,7 +45,7 @@ export {
 export type { AttemptRecord, CompletionStatus, LearnerProgress } from "./progress/progress";
 export { buildDiagnostics, createDiagnosticItem } from "./diagnostics/diagnostics";
 export type { DiagnosticDimension, DiagnosticItem, DiagnosticsReport } from "./diagnostics/diagnostics";
-export { FEEDBACK_SOURCES, buildFeedback, createFeedbackItem, createAutomaticFeedback } from "./feedback/feedback";
+export { FEEDBACK_SOURCES, buildFeedback, createFeedbackItem, createAutomaticFeedback, createTeacherFeedback, validateTeacherFeedback } from "./feedback/feedback";
 export type { FeedbackBundle, FeedbackItem, FeedbackSource, RubricOutcome } from "./feedback/feedback";
 export { buildMarkbook } from "./markbook/markbook";
 export type { Activity, Attempt, Group, Learner, Markbook, MarkbookRow, MarkbookSummary } from "./markbook/markbook";
