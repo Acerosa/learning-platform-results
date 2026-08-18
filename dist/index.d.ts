@@ -13,3 +13,5 @@ export { buildMarkbook } from "./markbook/markbook";
 export type { Activity, Attempt, Group, Learner, Markbook, MarkbookRow, MarkbookSummary } from "./markbook/markbook";
 export { EXPORT_FORMATS, exportResults } from "./exports/exports";
 export type { ExportDocument, ExportFormat, ExportSheet } from "./exports/exports";
+export { INTERVENTION_SIGNAL_KEYS, buildAssessmentOverview, buildAssessmentReadiness, buildInterventionSignals, rankWeakDimensions, summariseDimensionPerformance, summariseScoreDistribution, summariseTrend } from "./analytics/analytics";
+export type { AssessmentOverview, AssessmentOverviewInput, AssessmentReadinessIndicator, DimensionPerformanceSummary, InterventionSignal, InterventionSignalKey, ScoreDistribution, TrendSummary } from "./analytics/analytics";

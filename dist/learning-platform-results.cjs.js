@@ -27,12 +27,16 @@ __export(index_exports, {
   EVIDENCE_TYPES: () => EVIDENCE_TYPES,
   EXPORT_FORMATS: () => EXPORT_FORMATS,
   FEEDBACK_SOURCES: () => FEEDBACK_SOURCES,
+  INTERVENTION_SIGNAL_KEYS: () => INTERVENTION_SIGNAL_KEYS,
   MARKING_SOURCES: () => MARKING_SOURCES,
   REVIEW_REASONS: () => REVIEW_REASONS,
   REVIEW_STATES: () => REVIEW_STATES,
   ResultsError: () => ResultsError,
+  buildAssessmentOverview: () => buildAssessmentOverview,
+  buildAssessmentReadiness: () => buildAssessmentReadiness,
   buildDiagnostics: () => buildDiagnostics,
   buildFeedback: () => buildFeedback,
+  buildInterventionSignals: () => buildInterventionSignals,
   buildMarkbook: () => buildMarkbook,
   buildReviewQueue: () => buildReviewQueue,
   calculateBestAttempt: () => calculateBestAttempt,
@@ -63,10 +67,14 @@ __export(index_exports, {
   interpretAttempt: () => interpretAttempt,
   mapStoredEvidenceType: () => mapStoredEvidenceType,
   mapStoredMarkingSource: () => mapStoredMarkingSource,
+  rankWeakDimensions: () => rankWeakDimensions,
   reviewReason: () => reviewReason,
   reviewState: () => reviewState,
+  summariseDimensionPerformance: () => summariseDimensionPerformance,
   summariseMarking: () => summariseMarking,
   summariseReviewChange: () => summariseReviewChange,
+  summariseScoreDistribution: () => summariseScoreDistribution,
+  summariseTrend: () => summariseTrend,
   validateReviewDecision: () => validateReviewDecision,
   validateTeacherFeedback: () => validateTeacherFeedback
 });
@@ -729,5 +737,252 @@ function exportResults(input) {
       ])
     })
   });
+}
+
+// src/analytics/analytics.ts
+var INTERVENTION_SIGNAL_KEYS = Object.freeze([
+  "assigned-never-attempted",
+  "repeated-attempts-no-improvement",
+  "low-completion",
+  "unresolved-review-backlog",
+  "repeated-low-topic-or-skill",
+  "declining-recent-results"
+]);
+function nonNegative(value, code) {
+  if (!Number.isFinite(value) || value < 0) {
+    throw Object.assign(new Error(code), { code });
+  }
+  return value;
+}
+function buildAssessmentOverview(input) {
+  return freeze({
+    activeLearners: nonNegative(input.activeLearners, "ACTIVE_LEARNERS_INVALID"),
+    activeGroups: nonNegative(input.activeGroups, "ACTIVE_GROUPS_INVALID"),
+    attemptCount: nonNegative(input.attemptCount, "ATTEMPT_COUNT_INVALID"),
+    completedAttempts: nonNegative(input.completedAttempts, "COMPLETED_ATTEMPTS_INVALID"),
+    completionPercentage: input.completionPercentage,
+    averageScorePercentage: input.averageScorePercentage,
+    requiresReviewCount: nonNegative(input.requiresReviewCount, "REQUIRES_REVIEW_INVALID"),
+    reviewedResponseCount: nonNegative(input.reviewedResponseCount, "REVIEWED_COUNT_INVALID"),
+    assignmentCount: nonNegative(input.assignmentCount, "ASSIGNMENT_COUNT_INVALID"),
+    participatingLearnerCount: nonNegative(
+      input.participatingLearnerCount,
+      "PARTICIPATING_LEARNERS_INVALID"
+    ),
+    topicMetadataCoverage: input.topicLinkCount > 0 ? "present" : "absent",
+    skillMetadataCoverage: input.skillLinkCount > 0 ? "present" : "absent",
+    topicLinkCount: nonNegative(input.topicLinkCount, "TOPIC_LINK_COUNT_INVALID"),
+    skillLinkCount: nonNegative(input.skillLinkCount, "SKILL_LINK_COUNT_INVALID")
+  });
+}
+function summariseScoreDistribution(input) {
+  return freeze({
+    average: input.average ?? null,
+    best: input.best ?? null,
+    latest: input.latest ?? null,
+    first: input.first ?? null
+  });
+}
+function summariseTrend(scoresNewestFirst) {
+  const scores = scoresNewestFirst.filter((value) => Number.isFinite(value));
+  if (scores.length < 2) {
+    return freeze({
+      direction: "insufficient-data",
+      deltaPercentagePoints: null,
+      sampleSize: scores.length,
+      reason: "Need at least two completed results to describe a trend."
+    });
+  }
+  const newest = scores[0];
+  const previous = scores[1];
+  const delta = Math.round((newest - previous) * 10) / 10;
+  if (Math.abs(delta) < 0.5) {
+    return freeze({
+      direction: "stable",
+      deltaPercentagePoints: delta,
+      sampleSize: scores.length,
+      reason: `Latest result is within 0.5 points of the previous result (${previous} \u2192 ${newest}).`
+    });
+  }
+  if (delta > 0) {
+    return freeze({
+      direction: "improving",
+      deltaPercentagePoints: delta,
+      sampleSize: scores.length,
+      reason: `Latest result improved by ${delta} points versus the previous result.`
+    });
+  }
+  return freeze({
+    direction: "declining",
+    deltaPercentagePoints: delta,
+    sampleSize: scores.length,
+    reason: `Latest result declined by ${Math.abs(delta)} points versus the previous result.`
+  });
+}
+function summariseDimensionPerformance(dimensions, options = {}) {
+  const strengthThreshold = options.strengthThreshold ?? 80;
+  const weaknessThreshold = options.weaknessThreshold ?? 50;
+  return freeze(
+    dimensions.map(
+      (dimension2) => freeze({
+        key: dimension2.key,
+        label: dimension2.label,
+        attemptCount: dimension2.attemptCount,
+        successPercentage: dimension2.percentage,
+        reviewCount: dimension2.reviewCount,
+        strength: dimension2.percentage != null && dimension2.percentage >= strengthThreshold,
+        weakness: dimension2.percentage != null && dimension2.percentage <= weaknessThreshold
+      })
+    )
+  );
+}
+function rankWeakDimensions(report, limit = 5) {
+  return freeze(
+    summariseDimensionPerformance([...report.questions, ...report.topics, ...report.skills]).filter((entry) => entry.weakness).sort((left, right) => (left.successPercentage ?? 100) - (right.successPercentage ?? 100)).slice(0, Math.max(0, limit))
+  );
+}
+function buildAssessmentReadiness(input) {
+  return freeze([
+    freeze({
+      key: "completion",
+      label: "Completion",
+      value: input.completionPercentage,
+      unit: "percent",
+      explanation: "Share of assigned learning attempts that are completed."
+    }),
+    freeze({
+      key: "average-performance",
+      label: "Average performance",
+      value: input.averageScorePercentage,
+      unit: "percent",
+      explanation: "Average completed attempt score percentage from authoritative attempts."
+    }),
+    freeze({
+      key: "recent-trend",
+      label: "Recent trend",
+      value: input.trend.deltaPercentagePoints,
+      unit: "percent",
+      explanation: input.trend.reason
+    }),
+    freeze({
+      key: "unresolved-reviews",
+      label: "Unresolved reviews",
+      value: nonNegative(input.unresolvedReviewCount, "UNRESOLVED_REVIEW_INVALID"),
+      unit: "count",
+      explanation: "Responses still flagged requires_review."
+    }),
+    freeze({
+      key: "topic-coverage",
+      label: "Topic coverage",
+      value: input.topicCoveragePercentage,
+      unit: "percent",
+      explanation: input.topicCoveragePercentage == null ? "Topic metadata is absent or incomplete for the selected scope." : "Share of responses linked to at least one topic_key."
+    })
+  ]);
+}
+function buildInterventionSignals(input) {
+  const signals = [];
+  for (const row of input.assignedNeverAttempted ?? []) {
+    if (row.assignedCount > 0 && row.attemptedCount === 0) {
+      signals.push(
+        freeze({
+          key: "assigned-never-attempted",
+          entityType: "activity",
+          entityKey: requiredText(row.entityKey, "ENTITY_KEY_REQUIRED"),
+          reason: "Assigned learners have not started this activity.",
+          evidence: freeze({
+            assignedCount: row.assignedCount,
+            attemptedCount: row.attemptedCount
+          })
+        })
+      );
+    }
+  }
+  for (const row of input.repeatedAttemptsNoImprovement ?? []) {
+    if (row.attemptCount >= 3 && row.firstScore != null && row.latestScore != null && row.latestScore <= row.firstScore) {
+      signals.push(
+        freeze({
+          key: "repeated-attempts-no-improvement",
+          entityType: "learner",
+          entityKey: requiredText(row.entityKey, "ENTITY_KEY_REQUIRED"),
+          reason: "Multiple attempts without an improved latest score versus the first score.",
+          evidence: freeze({
+            attemptCount: row.attemptCount,
+            firstScore: row.firstScore,
+            latestScore: row.latestScore
+          })
+        })
+      );
+    }
+  }
+  for (const row of input.lowCompletion ?? []) {
+    const threshold = row.threshold ?? 50;
+    if (row.completionPercentage != null && row.completionPercentage < threshold) {
+      signals.push(
+        freeze({
+          key: "low-completion",
+          entityType: "group",
+          entityKey: requiredText(row.entityKey, "ENTITY_KEY_REQUIRED"),
+          reason: `Completion ${row.completionPercentage}% is below the ${threshold}% attention threshold.`,
+          evidence: freeze({
+            completionPercentage: row.completionPercentage,
+            threshold
+          })
+        })
+      );
+    }
+  }
+  for (const row of input.unresolvedReviewBacklog ?? []) {
+    const threshold = row.threshold ?? 1;
+    if (row.requiresReviewCount >= threshold) {
+      signals.push(
+        freeze({
+          key: "unresolved-review-backlog",
+          entityType: "group",
+          entityKey: requiredText(row.entityKey, "ENTITY_KEY_REQUIRED"),
+          reason: `${row.requiresReviewCount} response(s) still require teacher review.`,
+          evidence: freeze({
+            requiresReviewCount: row.requiresReviewCount,
+            threshold
+          })
+        })
+      );
+    }
+  }
+  for (const row of input.repeatedLowTopicOrSkill ?? []) {
+    const threshold = row.threshold ?? 50;
+    if (row.attemptCount >= 3 && row.successPercentage != null && row.successPercentage <= threshold) {
+      signals.push(
+        freeze({
+          key: "repeated-low-topic-or-skill",
+          entityType: row.entityType,
+          entityKey: requiredText(row.entityKey, "ENTITY_KEY_REQUIRED"),
+          reason: `${row.entityType} success ${row.successPercentage}% across ${row.attemptCount} responses is at or below ${threshold}%.`,
+          evidence: freeze({
+            successPercentage: row.successPercentage,
+            attemptCount: row.attemptCount,
+            threshold
+          })
+        })
+      );
+    }
+  }
+  for (const row of input.decliningRecentResults ?? []) {
+    if (row.trend.direction === "declining") {
+      signals.push(
+        freeze({
+          key: "declining-recent-results",
+          entityType: "learner",
+          entityKey: requiredText(row.entityKey, "ENTITY_KEY_REQUIRED"),
+          reason: row.trend.reason,
+          evidence: freeze({
+            deltaPercentagePoints: row.trend.deltaPercentagePoints,
+            sampleSize: row.trend.sampleSize
+          })
+        })
+      );
+    }
+  }
+  return freeze(signals);
 }
 //# sourceMappingURL=learning-platform-results.cjs.js.map

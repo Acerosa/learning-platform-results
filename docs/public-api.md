@@ -34,6 +34,11 @@ Stable exports from `@learning-platform/results`:
 | `createActivitySummary` | Cohort activity summary |
 | `buildDiagnostics` | Strengths, weaknesses, mistakes |
 | `createDiagnosticItem` | Diagnostic input helper |
+| `buildAssessmentOverview` | Platform assessment KPI interpretation |
+| `summariseTrend` / `summariseScoreDistribution` | Deterministic trend and score summaries |
+| `summariseDimensionPerformance` / `rankWeakDimensions` | Topic/skill/question roll-up helpers |
+| `buildAssessmentReadiness` | Explainable readiness indicators (no black-box score) |
+| `buildInterventionSignals` / `INTERVENTION_SIGNAL_KEYS` | Explicit “Needs attention” reasons |
 | `FEEDBACK_SOURCES` | Feedback enumerations |
 | `createFeedbackItem` | One feedback note |
 | `buildFeedback` | Feedback bundle |

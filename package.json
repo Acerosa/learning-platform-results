@@ -1,7 +1,7 @@
 {
   "name": "@learning-platform/results",
-  "version": "0.1.1",
-  "description": "Shared educational business logic for Learning Platform attempts, results, progress, diagnostics, feedback, markbook and exports.",
+  "version": "0.1.2",
+  "description": "Shared educational business logic for Learning Platform attempts, results, progress, diagnostics, feedback, markbook, analytics and exports.",
   "license": "MIT",
   "type": "module",
   "main": "./dist/learning-platform-results.esm.js",

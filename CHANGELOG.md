@@ -2,6 +2,15 @@
 
 All notable changes are documented here. This project follows Semantic Versioning.
 
+## 0.1.2 - Unreleased
+
+### Added
+
+- Assessment analytics helpers: `buildAssessmentOverview`, `summariseTrend`,
+  `summariseScoreDistribution`, `summariseDimensionPerformance`,
+  `rankWeakDimensions`, `buildAssessmentReadiness`, `buildInterventionSignals`.
+- Deterministic “Needs attention” signal keys without predictive risk scoring.
+
 ## 0.1.1 - 2026-08-16
 
 ### Added
